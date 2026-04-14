@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sql } from '@vercel/postgres'
+import { sql } from '@/lib/db'
 import { cookies } from 'next/headers'
 import { strictLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
 import { verifyClubVisitorToken } from '@/lib/auth'

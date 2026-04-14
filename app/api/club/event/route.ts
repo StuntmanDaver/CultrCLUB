@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sql } from '@vercel/postgres'
+import { sql } from '@/lib/db'
 import crypto from 'crypto'
 
 const ALLOWED_EVENT_TYPES = [
