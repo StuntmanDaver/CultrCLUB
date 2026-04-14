@@ -1,4 +1,4 @@
-import { db } from '@vercel/postgres'
+import { createPool } from '@/lib/db'
 import { COMMISSION_CONFIG, isInBonusWindow } from '@/lib/config/affiliate'
 import {
   getCreatorById,
@@ -148,7 +148,8 @@ export async function processOrderAttribution(params: {
   const override = await calculateOverrideCommission(attribution.creatorId, netRevenue, directAmount)
 
   // 3. Execute all writes in a single transaction
-  const client = await db.connect()
+  const pool = createPool()
+  const client = await pool.connect()
   let attributionId: string
 
   try {
@@ -217,6 +218,7 @@ export async function processOrderAttribution(params: {
     throw error
   } finally {
     client.release()
+    await pool.end()
   }
 
   const earnedDirect = attribution.isSelfReferral ? 0 : directAmount
@@ -245,7 +247,8 @@ export async function recordZeroRevenueAttribution(params: {
   attribution: ResolvedAttribution
 }): Promise<string | null> {
   const { orderId, customerEmail, attribution } = params
-  const client = await db.connect()
+  const pool2 = createPool()
+  const client = await pool2.connect()
   try {
     await client.query('BEGIN')
 
@@ -293,6 +296,7 @@ export async function recordZeroRevenueAttribution(params: {
     throw error
   } finally {
     client.release()
+    await pool2.end()
   }
 }
 

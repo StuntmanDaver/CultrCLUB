@@ -1,5 +1,7 @@
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
-import { sql, db } from '@vercel/postgres'
+import { sql, createPool } from '@/lib/db'
 import crypto from 'crypto'
 import { cookies } from 'next/headers'
 import { validateCouponUnified, type UnifiedCouponResult } from '@/lib/config/coupons'
@@ -180,7 +182,8 @@ export async function POST(request: Request) {
 
     // Wrap member upsert + order insert in a transaction to prevent partial writes
     try {
-      const client = await db.connect()
+      const pool = createPool()
+      const client = await pool.connect()
       try {
         await client.query('BEGIN')
 
@@ -249,6 +252,7 @@ export async function POST(request: Request) {
         throw err
       } finally {
         client.release()
+        await pool.end()
       }
     } catch (dbError) {
       console.error('[club/orders] DB error (fatal):', describeError(dbError))
@@ -326,13 +330,10 @@ export async function POST(request: Request) {
     }
 
     // Determine the correct site URL based on request hostname
-    // This ensures approval links point to the correct domain (staging vs production)
-    let siteUrl: string
-    if (requestHost.includes('join.cultrhealth.com') || requestHost.includes('staging.cultrhealth.com')) {
-      siteUrl = `https://${requestHost}`
-    } else {
-      siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrhealth.com'
-    }
+    // siteUrl = customer-facing (cultrclub.com)
+    // adminBaseUrl = admin panel (cultrhealth.com) for approval links
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrclub.com'
+    const adminBaseUrl = process.env.ADMIN_BASE_URL || 'https://cultrhealth.com'
 
     // Send emails independently (not with Promise.all, so one failure doesn't block the other)
     let customerEmailSent = false
@@ -378,7 +379,7 @@ export async function POST(request: Request) {
         notes: notes || '',
         approvalToken,
         expiresAt,
-        siteUrl,
+        siteUrl: adminBaseUrl,
         referredBy: couponResult?.isCreatorCode ? couponResult.creatorName : undefined,
       })
       adminEmailSent = true

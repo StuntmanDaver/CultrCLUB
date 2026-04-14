@@ -34,13 +34,15 @@ export function parseCookieJson<T>(value: string | null | undefined): T | null {
 
 /**
  * Returns the cookie domain for cross-subdomain sharing.
- * On cultrhealth.com (staging/production/join), returns '.cultrhealth.com'
- * so cookies are shared across all subdomains.
+ * On cultrclub.com, returns '.cultrclub.com'.
+ * On cultrhealth.com (legacy/admin), returns '.cultrhealth.com'.
  * On localhost/dev, returns undefined (browser default).
  */
 export function getCookieDomain(): string | undefined {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-  return siteUrl.includes('cultrhealth.com') ? '.cultrhealth.com' : undefined
+  if (siteUrl.includes('cultrclub.com')) return '.cultrclub.com'
+  if (siteUrl.includes('cultrhealth.com')) return '.cultrhealth.com'
+  return undefined
 }
 
 /**

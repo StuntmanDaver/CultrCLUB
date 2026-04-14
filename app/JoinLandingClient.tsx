@@ -424,9 +424,8 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem(CLUB_MEMBER_STORAGE_KEY)
-    // Clear cookie with and without domain to cover both production and local
+    // Clear cookie — domain derived dynamically so it works on cultrclub.com and local
     document.cookie = 'cultr_club_visitor=; path=/; max-age=0; SameSite=Lax'
-    document.cookie = 'cultr_club_visitor=; path=/; max-age=0; SameSite=Lax; domain=.cultrhealth.com'
     setMember(null)
     setLoginEmail('')
     setShowSignup(true)
