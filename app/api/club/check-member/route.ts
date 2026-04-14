@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     }
 
     if (!lookupEmail) {
-      const cookieStore = cookies()
+      const cookieStore = await cookies()
       const visitorCookie = cookieStore.get('cultr_club_visitor')
 
       if (!visitorCookie?.value) {
