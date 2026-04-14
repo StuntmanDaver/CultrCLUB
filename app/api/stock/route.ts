@@ -1,8 +1,7 @@
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'private, no-cache, no-store, must-revalidate, max-age=0',
