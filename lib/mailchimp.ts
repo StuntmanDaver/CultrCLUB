@@ -1,5 +1,3 @@
-import * as crypto from 'crypto'
-
 function getConfig() {
   const apiKey = process.env.MAILCHIMP_API_KEY
   const audienceId = process.env.MAILCHIMP_AUDIENCE_ID
@@ -13,11 +11,10 @@ function getAuthHeader(apiKey: string): string {
 }
 
 /** MD5 hash of lowercase, trimmed email — Mailchimp's subscriber key. */
-export function getEmailHash(email: string): string {
-  return crypto
-    .createHash('md5')
-    .update(email.trim().toLowerCase())
-    .digest('hex')
+export async function getEmailHash(email: string): Promise<string> {
+  const data = new TextEncoder().encode(email.trim().toLowerCase())
+  const hashBuffer = await crypto.subtle.digest('MD5', data)
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 interface SyncContactOptions {
@@ -38,7 +35,7 @@ export async function syncContactToMailchimp(opts: SyncContactOptions): Promise<
   const config = getConfig()
   if (!config) return
 
-  const emailHash = getEmailHash(opts.email)
+  const emailHash = await getEmailHash(opts.email)
   const url = `https://${config.serverPrefix}.api.mailchimp.com/3.0/lists/${config.audienceId}/members/${emailHash}`
 
   const mergeFields: Record<string, string> = {
@@ -82,7 +79,7 @@ export async function addTagsToContact(email: string, tags: string[]): Promise<v
   const config = getConfig()
   if (!config) return
 
-  const emailHash = getEmailHash(email)
+  const emailHash = await getEmailHash(email)
   const url = `https://${config.serverPrefix}.api.mailchimp.com/3.0/lists/${config.audienceId}/members/${emailHash}/tags`
 
   try {

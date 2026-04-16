@@ -2,14 +2,13 @@ export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
 import { sql, createPool } from '@/lib/db'
-import crypto from 'crypto'
 import { cookies } from 'next/headers'
 import { validateCouponUnified, type UnifiedCouponResult } from '@/lib/config/coupons'
 import { FL_TAX_RATE, calculateTaxDollars, TAX_RATE_LABEL } from '@/lib/config/tax'
 import { calculateBundleDiscount, BUNDLE_DISCOUNT_RATE, getJoinCouponPolicy, normalizeJoinCartItems } from '@/lib/config/join-therapies'
 import { escapeHtml, brandedEmailHeader, brandedEmailFooter, EMAIL_FONT_IMPORT } from '@/lib/resend'
 import { resolveAttribution } from '@/lib/creators/attribution'
-import { syncContactToMailchimp } from '@/lib/contacts'
+import { syncContactToMailchimp } from '@/lib/mailchimp'
 import { formLimiter, rateLimitResponse } from '@/lib/rate-limit'
 
 interface OrderItem {
@@ -127,7 +126,9 @@ export async function POST(request: Request) {
     const total = subtotal + taxAmount
 
     // Generate order number
-    const orderNumber = `CLB-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`
+    const randBytes = crypto.getRandomValues(new Uint8Array(2))
+    const randHex = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
+    const orderNumber = `CLB-${Date.now().toString(36).toUpperCase()}-${randHex}`
 
     // Generate HMAC-signed approval token
     const approvalSecret = process.env.JWT_SECRET
@@ -136,10 +137,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 })
     }
     const expiresAt = Date.now() + 48 * 60 * 60 * 1000 // 48 hours from now
-    const approvalToken = crypto
-      .createHmac('sha256', approvalSecret)
-      .update(`${orderNumber}:${normalizedEmail}:${expiresAt}`)
-      .digest('hex')
+    const hmacKey = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(approvalSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    const hmacData = new TextEncoder().encode(`${orderNumber}:${normalizedEmail}:${expiresAt}`)
+    const hmacBuffer = await crypto.subtle.sign('HMAC', hmacKey, hmacData)
+    const approvalToken = Array.from(new Uint8Array(hmacBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
 
     // Look up or create member
     let memberId: string | null = null

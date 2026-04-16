@@ -51,17 +51,7 @@ interface MemoryStoreEntry {
 
 const memoryStore = new Map<string, MemoryStoreEntry>()
 
-// Cleanup old entries periodically
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now()
-    Array.from(memoryStore.entries()).forEach(([key, entry]) => {
-      if (entry.resetTime < now) {
-        memoryStore.delete(key)
-      }
-    })
-  }, 60000) // Clean up every minute
-}
+// Cleanup old entries lazily during checks (setInterval is forbidden at module scope on CF Workers)
 
 function createMemoryRateLimiter(config: RateLimitConfig): RateLimiter {
   const { limit, windowMs, prefix = 'rl' } = config
@@ -70,6 +60,14 @@ function createMemoryRateLimiter(config: RateLimitConfig): RateLimiter {
     async check(identifier: string): Promise<RateLimitResult> {
       const key = `${prefix}:${identifier}`
       const now = Date.now()
+
+      // Lazy cleanup: prune expired entries every 100 checks
+      if (memoryStore.size > 50) {
+        for (const [k, v] of memoryStore) {
+          if (v.resetTime < now) memoryStore.delete(k)
+        }
+      }
+
       const entry = memoryStore.get(key)
 
       if (!entry || entry.resetTime < now) {

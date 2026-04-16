@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'crypto'
 import { COMMISSION_CONFIG } from '@/lib/config/affiliate'
 import { getCookieDomain } from '@/lib/utils'
 import {
@@ -15,16 +14,23 @@ import {
 // TOKEN GENERATION
 // ===========================================
 
+function bytesToBase64Url(bytes: Uint8Array): string {
+  const binStr = Array.from(bytes).map(b => String.fromCharCode(b)).join('')
+  return btoa(binStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
 export function generateAttributionToken(): string {
-  return randomBytes(24).toString('base64url')
+  return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(24)))
 }
 
 export function generateSessionId(): string {
-  return randomBytes(16).toString('base64url')
+  return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(16)))
 }
 
-export function hashIp(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex').slice(0, 16)
+export async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(ip)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
 }
 
 // ===========================================
@@ -96,7 +102,7 @@ export async function handleClickTracking(params: {
   // 3. Generate session and attribution tokens
   const sessionId = params.existingSessionId || generateSessionId()
   const attributionToken = generateAttributionToken()
-  const ipHash = hashIp(params.ip)
+  const ipHash = await hashIp(params.ip)
 
   // 4. Create click event record
   await createClickEvent({
@@ -121,7 +127,7 @@ export async function handleClickTracking(params: {
   }
 
   // Build destination path with UTM params
-  const destinationUrl = new URL(link.destination_path, 'https://cultrhealth.com')
+  const destinationUrl = new URL(link.destination_path, process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrclub.com')
   destinationUrl.searchParams.set('utm_source', link.utm_source || 'creator')
   destinationUrl.searchParams.set('utm_medium', link.utm_medium || 'referral')
   if (link.utm_campaign) {

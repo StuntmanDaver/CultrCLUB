@@ -41,7 +41,7 @@ export function getFromEmail(): string {
 // Get public site URL for email assets — localhost is unreachable from email clients
 function getEmailSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-  if (!envUrl || envUrl.includes('localhost')) return 'https://staging.cultrhealth.com'
+  if (!envUrl || envUrl.includes('localhost')) return 'https://cultrclub.com'
   return envUrl
 }
 
@@ -2027,7 +2027,7 @@ interface SiphoxRefundAlertData {
 export async function sendKitFulfillmentEmail(
   data: SiphoxKitFulfillmentEmailData
 ): Promise<EmailResult> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrhealth.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrclub.com'
   const safeName = escapeHtml(data.name)
   const safeAddress = escapeHtml(
     `${data.address.street1}, ${data.address.city}, ${data.address.state} ${data.address.zip}`
@@ -2064,7 +2064,7 @@ export async function sendResultsReadyEmail(data: {
     needsAttentionCount: number
   }
 }): Promise<EmailResult> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrhealth.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cultrclub.com'
   const safeName = escapeHtml(data.name)
 
   const content = `

@@ -2,15 +2,17 @@ export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-import crypto from 'crypto'
 import { formLimiter, rateLimitResponse } from '@/lib/rate-limit'
 import { createClubVisitorToken } from '@/lib/auth'
 import { escapeHtml, brandedEmailHeader, brandedEmailFooter, EMAIL_FONT_IMPORT } from '@/lib/resend'
 import { getCookieDomain } from '@/lib/utils'
-import { syncContactToMailchimp } from '@/lib/contacts'
+import { syncContactToMailchimp } from '@/lib/mailchimp'
 
-function hashIp(ip: string): string {
-  return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(ip)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
 }
 
 function getClientIp(request: Request): string {
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
       return rateLimitResponse(rateLimitResult)
     }
 
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     const { firstName, lastName, email, phone, socialHandle, address, signupType, age, gender, visitorContext } = body
     const name = `${firstName?.trim() || ''} ${lastName?.trim() || ''}`.trim()
 
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
       const d = new Date(vc.firstVisitAt)
       if (!isNaN(d.getTime())) firstVisitAt = d.toISOString()
     }
-    const ipHash = hashIp(getClientIp(request))
+    const ipHash = await hashIp(getClientIp(request))
 
     if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: 'First name, last name, email, and phone are required.' }, { status: 400 })

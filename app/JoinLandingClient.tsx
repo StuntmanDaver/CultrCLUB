@@ -290,7 +290,7 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
   useEffect(() => {
     fetch(`/api/stock?t=${Date.now()}`, { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : { stock: {} })
-      .then((d) => setStockData(d.stock || {}))
+      .then((d: any) => setStockData(d.stock || {}))
       .catch(() => {})
   }, [])
 

@@ -2,16 +2,17 @@ export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-import crypto from 'crypto'
-
 const ALLOWED_EVENT_TYPES = [
   'page_view', 'signup', 'add_to_cart', 'remove_from_cart',
   'begin_checkout', 'order_submitted', 'login',
   'apply_coupon', 'remove_coupon',
 ]
 
-function hashIp(ip: string): string {
-  return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(ip)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
 }
 
 function getClientIp(request: Request): string {
@@ -24,7 +25,7 @@ function getClientIp(request: Request): string {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const body = await request.json() as { sessionId?: string; eventType?: string; eventData?: object; memberId?: string; pageUrl?: string }
     const { sessionId, eventType, eventData, memberId, pageUrl } = body
 
     if (!sessionId || typeof sessionId !== 'string') {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true }) // silently skip if no DB
     }
 
-    const ipHash = hashIp(getClientIp(request))
+    const ipHash = await hashIp(getClientIp(request))
     const userAgent = request.headers.get('user-agent')?.slice(0, 512) || null
     const referrer = request.headers.get('referer')?.slice(0, 2048) || null
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
