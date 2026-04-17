@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Playfair_Display, Inter } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 
 const fraunces = Fraunces({
@@ -72,7 +73,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${playfair.variable} ${inter.variable}`}>
-      <body className="bg-brand-cream font-body">{children}</body>
+      <body className="bg-brand-cream font-body">
+        {children}
+        <Script
+          id="hs-script-loader"
+          src="//js-na2.hs-scripts.com/245823955.js"
+          strategy="afterInteractive"
+        />
+      </body>
     </html>
   )
 }
