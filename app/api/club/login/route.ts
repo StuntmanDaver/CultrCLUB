@@ -57,22 +57,21 @@ export async function POST(request: Request) {
         LIMIT 1
       `
 
+      // SECURITY: Anti-enumeration. Return the SAME generic response for
+      // (a) unknown email and (b) known email with wrong phone, so an
+      // attacker can't distinguish the two. HTTP status is also identical.
+      const GENERIC_AUTH_ERROR = { error: 'Email or phone number is incorrect.' }
+      const GENERIC_STATUS = 401
+
       if (result.rows.length === 0) {
-        return NextResponse.json(
-          { error: 'No account found with that email.' },
-          { status: 404 }
-        )
+        return NextResponse.json(GENERIC_AUTH_ERROR, { status: GENERIC_STATUS })
       }
 
       const member = result.rows[0]
       const storedPhone = member.phone?.replace(/\D/g, '') || ''
 
-      // Verify phone number matches
       if (storedPhone !== normalizedPhone) {
-        return NextResponse.json(
-          { error: 'Phone number does not match our records.' },
-          { status: 401 }
-        )
+        return NextResponse.json(GENERIC_AUTH_ERROR, { status: GENERIC_STATUS })
       }
 
       // Return member data and set cookie
