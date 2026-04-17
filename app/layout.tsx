@@ -37,11 +37,13 @@ export const metadata: Metadata = {
     siteName: 'CULTR Health',
     locale: 'en_US',
     type: 'website',
+    images: [{ url: '/og-image.png', width: 1536, height: 1024, type: 'image/png' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Change the CULTR, rebrand yourself.',
     description: 'Order labs, optimize hormones, and unlock your full potential with CULTR Health.',
+    images: [{ url: '/twitter-card.png', width: 1536, height: 1024, type: 'image/png' }],
   },
   robots: {
     index: false,
