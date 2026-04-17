@@ -7,7 +7,7 @@
  * Restored Apr 2026 to match the legacy join.cultrhealth.com catalog.
  */
 
-export type JoinStockStatus = 'in_stock' | 'low_stock' | 'out_of_stock'
+export type JoinStockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'restocking_soon'
 
 export interface JoinTherapy {
   id: string
@@ -89,6 +89,7 @@ export const JOIN_THERAPY_SECTIONS: JoinTherapySection[] = [
         category: 'glp1',
         catalogSku: 'SEMA-5MG-3ML',
         image: '/images/products/semaglutide-glp1.png',
+        secondaryImage: '/images/products/semaglutide-glp1-coa.png',
       },
       {
         id: 'tirzepatide',
@@ -221,6 +222,17 @@ export const JOIN_THERAPY_SECTIONS: JoinTherapySection[] = [
         image: '/images/products/igf1-lr3.png',
       },
       {
+        id: 'mots-c',
+        name: 'MOTS-C',
+        badge: '',
+        note: '40 MG | 3 ML',
+        description:
+          'Mitochondria-derived peptide that activates AMPK signaling for improved insulin sensitivity, metabolic flexibility, and longevity-aligned energy regulation.',
+        price: 230,
+        category: 'peptide',
+        image: '/images/products/mots-c.png',
+      },
+      {
         id: 'bacteriostatic-water',
         name: 'Bacteriostatic Water',
         badge: '',
@@ -327,6 +339,6 @@ export function getStockStatus(therapy: JoinTherapy): JoinStockStatus {
 
 /** Get max orderable quantity for a therapy. Returns Infinity when unlimited. */
 export function getMaxOrderQuantity(therapy: JoinTherapy): number {
-  if (therapy.stockStatus === 'out_of_stock') return 0
+  if (therapy.stockStatus === 'out_of_stock' || therapy.stockStatus === 'restocking_soon') return 0
   return therapy.stockQuantity ?? Infinity
 }
