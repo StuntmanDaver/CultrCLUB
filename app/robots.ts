@@ -40,6 +40,10 @@ const BLOCKED_USER_AGENTS = [
   'Amazonbot',
   'Bytespider',
   'FacebookBot',
+  // NOTE: Do NOT add facebookexternalhit / Twitterbot / Slackbot /
+  // LinkedInBot / TelegramBot / WhatsApp / Discordbot here — those are
+  // link-preview bots. They're explicitly allowed below so iMessage and
+  // other messengers render the OpenGraph thumbnail.
   'Meta-ExternalAgent',
   'Meta-ExternalFetcher',
   'cohere-ai',
@@ -70,12 +74,34 @@ const BLOCKED_USER_AGENTS = [
   'ISSCyberRiskCrawler',
 ]
 
+// Link-preview bots used by iMessage, Slack, Twitter, Discord, WhatsApp,
+// Telegram, LinkedIn. These only fetch OpenGraph + favicon for thumbnail
+// rendering — they do NOT index or train LLMs. Explicitly allowed so
+// shared URLs show a proper preview card.
+const PREVIEW_BOTS = [
+  'facebookexternalhit',  // Meta AND iMessage on iOS use this UA
+  'facebookcatalog',
+  'Twitterbot',
+  'Slackbot',
+  'Slackbot-LinkExpanding',
+  'Slack-ImgProxy',
+  'LinkedInBot',
+  'Discordbot',
+  'TelegramBot',
+  'WhatsApp',
+  'SkypeUriPreview',
+  'Pinterestbot',
+  'redditbot',
+]
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Explicit disallows for named bots (some ignore '*')
+      // Preview bots: allow full access for thumbnail rendering
+      ...PREVIEW_BOTS.map((ua) => ({ userAgent: ua, allow: '/' })),
+      // Explicit disallows for search + LLM bots (some ignore '*')
       ...BLOCKED_USER_AGENTS.map((ua) => ({ userAgent: ua, disallow: '/' })),
-      // Catch-all
+      // Catch-all for everyone else
       { userAgent: '*', disallow: '/' },
     ],
     // No sitemap, no host — nothing to guide any crawler.

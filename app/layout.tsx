@@ -21,11 +21,28 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  // Stealth: generic title. Direct visitors see this in the browser tab;
-  // scrapers get no brand string to ingest.
+  // Stealth: HTML <title> stays generic so browser tabs / scrapers that
+  // defeat preview-bot carveouts don't see the brand.
   title: '—',
-  // Stealth: no description, no OpenGraph, no Twitter card — minimizes
-  // information available to link previews and AI scrapers.
+  metadataBase: new URL('https://cultrclub.com'),
+  // OpenGraph / Twitter: MATCH join.cultrhealth.com so iMessage, Slack,
+  // Twitter, Discord, WhatsApp previews render the same thumbnail +
+  // copy. Preview bots (facebookexternalhit, Twitterbot, Slackbot,
+  // iMessage) get these tags; search + LLM crawlers are still blocked
+  // via robots.txt + noindex.
+  openGraph: {
+    title: 'Change the CULTR, rebrand yourself.',
+    description: 'Order labs, optimize hormones, and unlock your full potential with CULTR Health.',
+    url: 'https://cultrclub.com',
+    siteName: 'CULTR Health',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Change the CULTR, rebrand yourself.',
+    description: 'Order labs, optimize hormones, and unlock your full potential with CULTR Health.',
+  },
   robots: {
     index: false,
     follow: false,

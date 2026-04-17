@@ -16,10 +16,22 @@ export function middleware(request: NextRequest) {
 
   // Stealth: block every crawler at the HTTP layer for dynamic routes.
   // _headers covers static assets; middleware covers Worker-served HTML/SSR.
-  response.headers.set(
-    'X-Robots-Tag',
-    'noindex, nofollow, noarchive, nosnippet, noimageindex, nocache',
-  )
+  //
+  // EXCEPTION: link-preview bots (iMessage, Slack, Twitter, Discord, etc.)
+  // should NOT get the noindex/nosnippet header — otherwise they won't
+  // render a thumbnail for shared URLs. Their UAs are well-known and
+  // non-spoofable for our purposes (spoofing an iMessage preview doesn't
+  // help an attacker scrape us). Indexing is still blocked because these
+  // bots only fetch metadata, don't crawl links, and don't feed search.
+  const ua = request.headers.get('user-agent') || ''
+  const isPreviewBot = /facebookexternalhit|facebookcatalog|Twitterbot|Slackbot|Slack-ImgProxy|LinkedInBot|Discordbot|TelegramBot|WhatsApp|SkypeUriPreview|Pinterestbot|redditbot/i.test(ua)
+
+  if (!isPreviewBot) {
+    response.headers.set(
+      'X-Robots-Tag',
+      'noindex, nofollow, noarchive, nosnippet, noimageindex, nocache',
+    )
+  }
   response.headers.set('Referrer-Policy', 'no-referrer')
   response.headers.set('X-Frame-Options', 'SAMEORIGIN')
   response.headers.set('X-Content-Type-Options', 'nosniff')
