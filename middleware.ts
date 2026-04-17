@@ -5,6 +5,16 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next()
   const { hostname } = request.nextUrl
 
+  // Stealth: block every crawler at the HTTP layer for dynamic routes.
+  // _headers covers static assets; middleware covers Worker-served HTML/SSR.
+  response.headers.set(
+    'X-Robots-Tag',
+    'noindex, nofollow, noarchive, nosnippet, noimageindex, nocache',
+  )
+  response.headers.set('Referrer-Policy', 'no-referrer')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+
   // UTM first-touch tracking
   if (!request.cookies.get('cultr_visitor_ctx')) {
     const utmSource = (request.nextUrl.searchParams.get('utm_source') || '').slice(0, 255)
