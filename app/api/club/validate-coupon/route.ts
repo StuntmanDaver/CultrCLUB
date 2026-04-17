@@ -1,7 +1,7 @@
 export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
-import { validateCouponUnified, isExpiredCoupon } from '@/lib/config/coupons'
+import { validateCouponUnified, isExpiredCoupon, getCouponProductEligibilityError } from '@/lib/config/coupons'
 import { getJoinCouponPolicy } from '@/lib/config/join-therapies'
 
 export async function POST(request: Request) {
@@ -16,9 +16,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ valid: false, error })
     }
 
-    const couponPolicy = getJoinCouponPolicy(Array.isArray(items) ? items : [])
+    const cartItems = Array.isArray(items) ? items : []
+    const couponPolicy = getJoinCouponPolicy(cartItems)
     if (!couponPolicy.couponAllowed) {
       return NextResponse.json({ valid: false, error: couponPolicy.couponError })
+    }
+
+    const eligibilityError = getCouponProductEligibilityError(
+      { applicableTherapyIds: result.applicableTherapyIds, label: result.label },
+      cartItems
+    )
+    if (eligibilityError) {
+      return NextResponse.json({ valid: false, error: eligibilityError })
     }
 
     return NextResponse.json({
@@ -29,6 +38,7 @@ export async function POST(request: Request) {
       noBundleStack: result.noBundleStack || couponPolicy.forceNoBundleStack || false,
       creatorName: result.creatorName || undefined,
       creatorId: result.creatorId || undefined,
+      applicableTherapyIds: result.applicableTherapyIds,
     })
   } catch {
     return NextResponse.json({ valid: false, error: 'Invalid request' }, { status: 400 })
