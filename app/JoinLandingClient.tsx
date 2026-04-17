@@ -423,15 +423,18 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
   }, [])
 
   const handleLogout = useCallback(() => {
+    const currentEmail = member?.email || ''
     localStorage.removeItem(CLUB_MEMBER_STORAGE_KEY)
     // Clear cookie — domain derived dynamically so it works on cultrclub.com and local
     document.cookie = 'cultr_club_visitor=; path=/; max-age=0; SameSite=Lax'
     setMember(null)
-    setLoginEmail('')
-    setShowSignup(true)
     setOrderSubmitted(false)
     cart.clearCart()
-  }, [cart])
+    // Return to login modal (not signup) since this user already has an account
+    setLoginEmail(currentEmail)
+    setShowSignup(false)
+    setShowLogin(true)
+  }, [cart, member])
 
   // While checking member status (Priority 6 async fetch), show a brief loading overlay
   // to prevent bare-page flash where neither signup nor content is visible
@@ -672,14 +675,17 @@ function TherapyCarouselSection({ section, Icon, stockData, cartOpen, onAddToCar
     const cartItem = cart.items.find((i) => i.therapyId === therapy.id)
     const sd = stockData[therapy.id]
     const stockStatus = sd?.status || 'in_stock'
-    const maxQty = stockStatus === 'out_of_stock' ? 0 : (sd?.quantity ?? Infinity)
+    const maxQty = stockStatus === 'out_of_stock' || stockStatus === 'restocking_soon' ? 0 : (sd?.quantity ?? Infinity)
     const currentQty = cartItem?.quantity || 0
     const isOutOfStock = stockStatus === 'out_of_stock'
+    const isRestocking = stockStatus === 'restocking_soon'
     const atMaxQty = currentQty >= maxQty
-    const disableAdd = isOutOfStock || atMaxQty
+    const disableAdd = isOutOfStock || isRestocking || atMaxQty
 
     let stockLabel: string | undefined
-    if (isOutOfStock) {
+    if (isRestocking) {
+      stockLabel = 'Restocking Soon'
+    } else if (isOutOfStock) {
       stockLabel = 'Out of Stock'
     } else if (stockStatus === 'low_stock' && sd?.quantity != null) {
       stockLabel = `Only ${sd.quantity} left`
@@ -1135,7 +1141,7 @@ function CartSummaryPanel({ member, onOrderSubmitted, onTrackEvent, stockData }:
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [couponInput, setCouponInput] = useState('')
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string; isCreatorCode?: boolean; noBundleStack?: boolean; creatorName?: string; creatorId?: string } | null>(null)
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string; isCreatorCode?: boolean; noBundleStack?: boolean; creatorName?: string; creatorId?: string; applicableTherapyIds?: string[] } | null>(null)
   const [couponError, setCouponError] = useState('')
   const [couponApplying, setCouponApplying] = useState(false)
 
@@ -1151,8 +1157,17 @@ function CartSummaryPanel({ member, onOrderSubmitted, onTrackEvent, stockData }:
     if (appliedCoupon && !joinCouponPolicy.couponAllowed) {
       setAppliedCoupon(null)
       setCouponError(joinCouponPolicy.couponError || 'Coupon is no longer valid for this cart.')
+      return
     }
-  }, [appliedCoupon, joinCouponPolicy.couponAllowed, joinCouponPolicy.couponError])
+    if (appliedCoupon?.applicableTherapyIds?.length) {
+      const eligibleIds = new Set(appliedCoupon.applicableTherapyIds)
+      const hasMatch = cart.items.some((item) => eligibleIds.has(item.therapyId))
+      if (!hasMatch) {
+        setAppliedCoupon(null)
+        setCouponError(`${appliedCoupon.code} removed — add an eligible product to redeem it.`)
+      }
+    }
+  }, [appliedCoupon, joinCouponPolicy.couponAllowed, joinCouponPolicy.couponError, cart.items])
 
   async function handleApplyCoupon() {
     const code = couponInput.trim().toUpperCase()
@@ -1178,7 +1193,7 @@ function CartSummaryPanel({ member, onOrderSubmitted, onTrackEvent, stockData }:
       })
       const data = await res.json()
       if (data.valid) {
-        setAppliedCoupon({ code, discount: data.discount, label: data.label, isCreatorCode: data.isCreatorCode, noBundleStack: data.noBundleStack, creatorName: data.creatorName, creatorId: data.creatorId })
+        setAppliedCoupon({ code, discount: data.discount, label: data.label, isCreatorCode: data.isCreatorCode, noBundleStack: data.noBundleStack, creatorName: data.creatorName, creatorId: data.creatorId, applicableTherapyIds: data.applicableTherapyIds })
         setCouponInput('')
         setCouponError('')
         onTrackEvent?.('apply_coupon', { code, discount: data.discount, isCreatorCode: data.isCreatorCode, creatorName: data.creatorName })
@@ -1323,9 +1338,19 @@ function CartSummaryPanel({ member, onOrderSubmitted, onTrackEvent, stockData }:
               const rawSubtotal = cart.getCartTotal()
               const bundleDisc = (appliedCoupon?.code === 'OWNER' || appliedCoupon?.noBundleStack || joinCouponPolicy.forceNoBundleStack) ? 0 : cart.getBundleDiscount()
               const subtotalAfterBundle = rawSubtotal - bundleDisc
-              const couponAmt = appliedCoupon && subtotalAfterBundle > 0
-                ? Math.round(subtotalAfterBundle * appliedCoupon.discount) / 100
-                : 0
+              // Product-specific coupons (e.g. RETA) only discount matching line items.
+              let couponAmt = 0
+              if (appliedCoupon && subtotalAfterBundle > 0) {
+                if (appliedCoupon.applicableTherapyIds?.length) {
+                  const eligibleIds = new Set(appliedCoupon.applicableTherapyIds)
+                  const eligibleSubtotal = cart.items.reduce((sum, item) => {
+                    return item.price && eligibleIds.has(item.therapyId) ? sum + item.price * item.quantity : sum
+                  }, 0)
+                  couponAmt = Math.round(eligibleSubtotal * appliedCoupon.discount) / 100
+                } else {
+                  couponAmt = Math.round(subtotalAfterBundle * appliedCoupon.discount) / 100
+                }
+              }
               const afterCoupon = subtotalAfterBundle - couponAmt
               const taxAmt = afterCoupon > 0 ? Math.round(afterCoupon * 0.075 * 100) / 100 : 0
               const finalTotal = afterCoupon + taxAmt
