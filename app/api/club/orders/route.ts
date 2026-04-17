@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
     // Stock validation from DB — reject out-of-stock or over-limit items
     if (process.env.POSTGRES_URL) {
-      const stockResult = await sql`SELECT therapy_id, therapy_name, stock_status, stock_quantity FROM product_inventory`
+      const stockResult = await sql`SELECT therapy_id, therapy_name, stock_status, stock_quantity FROM product_inventory WHERE COALESCE(site_source, 'join_cultrhealth') = 'cultrclub'`
       const stockMap = new Map(stockResult.rows.map((r) => [r.therapy_id, r]))
       for (const item of orderItems) {
         const inv = stockMap.get(item.therapyId)
@@ -248,7 +248,7 @@ export async function POST(request: Request) {
                  END,
                  updated_at = NOW(),
                  updated_by = 'system:order'
-             WHERE therapy_id = $2 AND stock_quantity IS NOT NULL`,
+             WHERE therapy_id = $2 AND stock_quantity IS NOT NULL AND COALESCE(site_source, 'join_cultrhealth') = 'cultrclub'`,
             [item.quantity, item.therapyId]
           )
         }
