@@ -151,7 +151,7 @@ export async function POST(request: Request) {
       memberId,
     })
 
-    const domain = getCookieDomain()
+    const domain = getCookieDomain(new URL(request.url).hostname)
     response.cookies.set('cultr_club_visitor', clubVisitorToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',

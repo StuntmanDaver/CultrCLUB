@@ -34,14 +34,16 @@ export function parseCookieJson<T>(value: string | null | undefined): T | null {
 
 /**
  * Returns the cookie domain for cross-subdomain sharing.
- * On cultrclub.com, returns '.cultrclub.com'.
- * On cultrhealth.com (legacy/admin), returns '.cultrhealth.com'.
- * On localhost/dev, returns undefined (browser default).
+ * Prefers the live request hostname (robust against missing/stale NEXT_PUBLIC_SITE_URL
+ * in edge env); falls back to NEXT_PUBLIC_SITE_URL.
+ * On localhost/dev, returns undefined (browser default = host-only cookie).
  */
-export function getCookieDomain(): string | undefined {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-  if (siteUrl.includes('cultrclub.com')) return '.cultrclub.com'
-  if (siteUrl.includes('cultrhealth.com')) return '.cultrhealth.com'
+export function getCookieDomain(hostname?: string): string | undefined {
+  const host = hostname || (() => {
+    try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || '').hostname } catch { return '' }
+  })()
+  if (host.endsWith('cultrclub.com')) return '.cultrclub.com'
+  if (host.endsWith('cultrhealth.com')) return '.cultrhealth.com'
   return undefined
 }
 

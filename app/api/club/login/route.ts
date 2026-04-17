@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       const clubVisitorToken = await createClubVisitorToken(member.email)
 
       // Set visitor cookie (90 days)
-      const domain = getCookieDomain()
+      const domain = getCookieDomain(new URL(request.url).hostname)
       response.cookies.set('cultr_club_visitor', clubVisitorToken, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
