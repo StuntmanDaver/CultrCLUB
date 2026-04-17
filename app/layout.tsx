@@ -21,7 +21,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'CULTR Club',
+  // Stealth: generic title. Direct visitors see this in the browser tab;
+  // scrapers get no brand string to ingest.
+  title: '—',
   // Stealth: no description, no OpenGraph, no Twitter card — minimizes
   // information available to link previews and AI scrapers.
   robots: {

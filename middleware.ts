@@ -2,8 +2,17 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
   const { hostname } = request.nextUrl
+
+  // Canonicalize: redirect www.cultrclub.com → cultrclub.com (301).
+  // Keeps only one discoverable hostname in CT logs and passive DNS.
+  if (hostname === 'www.cultrclub.com') {
+    const url = request.nextUrl.clone()
+    url.hostname = 'cultrclub.com'
+    return NextResponse.redirect(url, 301)
+  }
+
+  const response = NextResponse.next()
 
   // Stealth: block every crawler at the HTTP layer for dynamic routes.
   // _headers covers static assets; middleware covers Worker-served HTML/SSR.
