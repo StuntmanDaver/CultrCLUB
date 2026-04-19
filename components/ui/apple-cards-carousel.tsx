@@ -361,12 +361,9 @@ export const Card = ({
   useEffect(() => {
     if (!open) return
 
-    // iOS Safari requires position:fixed to prevent background scroll —
-    // overflow:hidden alone doesn't work on iOS.
-    const scrollY = window.scrollY
-    document.body.style.position = "fixed"
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = "100%"
+    // Lock html+body overflow. Avoid position:fixed on body — it breaks
+    // child position:fixed elements on iOS Safari.
+    document.documentElement.style.overflow = "hidden"
     document.body.style.overflow = "hidden"
 
     function onKeyDown(event: KeyboardEvent) {
@@ -378,11 +375,8 @@ export const Card = ({
     requestAnimationFrame(() => closeButtonRef.current?.focus())
 
     return () => {
-      document.body.style.position = ""
-      document.body.style.top = ""
-      document.body.style.width = ""
+      document.documentElement.style.overflow = ""
       document.body.style.overflow = ""
-      window.scrollTo(0, scrollY)
       window.removeEventListener("keydown", onKeyDown)
     }
   }, [open, handleClose])
@@ -450,16 +444,16 @@ export const Card = ({
                               COA Report
                             </p>
                             <a
-                              href={card.secondarySrc.replace('/images/products/', '/pdfs/products/').replace('.png', '.pdf')}
+                              href={card.secondarySrc}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[11px] font-semibold text-brand-primary hover:underline flex items-center gap-1"
                             >
-                              View Full PDF <ArrowRight className="w-3 h-3" />
+                              Open full size <ArrowRight className="w-3 h-3" />
                             </a>
                           </div>
                           <a
-                            href={card.secondarySrc.replace('/images/products/', '/pdfs/products/').replace('.png', '.pdf')}
+                            href={card.secondarySrc}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block relative mt-3 h-[220px] w-full md:h-[260px] hover:opacity-90 transition-opacity cursor-zoom-in group"
@@ -530,6 +524,7 @@ export const Card = ({
                               {Array.from({ length: maxDropdownQty }, (_, i) => i + 1).map(num => (
                                 <option key={num} value={num}>{num}</option>
                               ))}
+                              <option value={0}>Remove</option>
                             </select>
                             <ChevronDown className="w-3 h-3 absolute right-0 pointer-events-none" />
                           </div>
@@ -572,10 +567,10 @@ export const Card = ({
         className={cn(
           "relative flex flex-col overflow-hidden rounded-3xl text-left",
           fluid
-            ? "h-[420px] md:h-[540px] w-full"
+            ? "h-[460px] md:h-[540px] w-full"
             : compact
-              ? "h-[340px] w-[180px] md:h-[460px] md:w-[260px]"
-              : "h-[420px] w-[260px] md:h-[540px] md:w-[320px]",
+              ? "h-[370px] w-[180px] md:h-[460px] md:w-[260px]"
+              : "h-[470px] w-[260px] md:h-[540px] md:w-[320px]",
           "bg-gradient-to-br from-brand-primary via-[#2d4d4a] to-[#1a332f]",
           "shadow-lg transition-shadow duration-300",
           "group cursor-pointer"
@@ -614,7 +609,7 @@ export const Card = ({
           </div>
           {card.secondarySrc && (
             <a
-              href={card.secondarySrc.replace('/images/products/', '/pdfs/products/').replace('.png', '.pdf')}
+              href={card.secondarySrc}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -629,7 +624,7 @@ export const Card = ({
         </div>
 
         {/* Center: Floating Product Image */}
-        <div className={cn("flex-1 relative z-10 flex items-center justify-center", compact ? "px-4 py-1" : "px-6 py-2")}>
+        <div className={cn("flex-1 min-h-0 relative z-10 flex items-center justify-center", compact ? "px-4 py-1" : "px-6 py-2")}>
           {card.src && (
             <motion.div
               animate={{ y: [0, -6, 0] }}
@@ -643,7 +638,7 @@ export const Card = ({
                 "relative w-full drop-shadow-[0_8px_30px_rgba(0,0,0,0.35)]",
                 fluid
                   ? "h-full"
-                  : compact ? "h-[130px] md:h-[200px]" : "h-[210px] md:h-[280px]"
+                  : compact ? "h-[120px] md:h-[200px]" : "h-[180px] md:h-[280px]"
               )}
             >
               <ProductImage
@@ -707,7 +702,7 @@ export const Card = ({
           )}
           {onAdd && (
             inCart ? (
-              <div 
+              <div
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1.5 rounded-full text-xs font-bold transition-all duration-200 bg-white/15 text-white backdrop-blur-sm px-3 py-1.5 shadow-sm"
               >
@@ -721,6 +716,7 @@ export const Card = ({
                     {Array.from({ length: maxDropdownQty }, (_, i) => i + 1).map(num => (
                       <option key={num} value={num}>{num}</option>
                     ))}
+                    <option value={0}>Remove</option>
                   </select>
                   <ChevronDown className="w-3 h-3 absolute right-0 pointer-events-none opacity-70" />
                 </div>

@@ -408,19 +408,13 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
 
   useEffect(() => {
     if (!(showSignup || showLogin || showMobileCart)) return
-    // iOS Safari requires position:fixed to prevent background scroll —
-    // overflow:hidden alone doesn't work on iOS.
-    const scrollY = window.scrollY
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
+    // Lock html+body overflow. Avoid position:fixed on body — it breaks
+    // child position:fixed elements (e.g. the mobile cart bar) on iOS Safari.
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
+      document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
-      window.scrollTo(0, scrollY)
     }
   }, [showSignup, showLogin, showMobileCart])
 
