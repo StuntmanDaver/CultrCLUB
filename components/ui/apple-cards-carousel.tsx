@@ -71,9 +71,26 @@ function MobileCarousel({ items }: { items: JSX.Element[] }) {
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const isSwiping = useRef(false)
+  const trackRef = useRef<HTMLDivElement>(null)
+  // Measured at runtime from the first card so compact (180px) and
+  // non-compact (260px) carousels both step the exact card width + gap-3.
+  const [cardStep, setCardStep] = useState(272)
 
   const total = items.length
-  const cardStep = 272 // 260px card + 12px gap
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return
+    const measure = () => {
+      const first = track.firstElementChild as HTMLElement | null
+      if (first && first.offsetWidth > 0) {
+        setCardStep(first.offsetWidth + 12) // gap-3 = 12px
+      }
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [items])
 
   // Swipe hint nudge
   useEffect(() => {
@@ -149,6 +166,7 @@ function MobileCarousel({ items }: { items: JSX.Element[] }) {
           onTouchEnd={onTouchEnd}
         >
           <div
+            ref={trackRef}
             className="flex gap-3 pl-4"
             style={{
               transform: `translateX(${translateX}px)`,
