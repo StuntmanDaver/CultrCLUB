@@ -407,12 +407,21 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
   }, [])
 
   useEffect(() => {
-    if (showSignup || showLogin || showMobileCart) {
-      document.body.style.overflow = 'hidden'
-    } else {
+    if (!(showSignup || showLogin || showMobileCart)) return
+    // iOS Safari requires position:fixed to prevent background scroll —
+    // overflow:hidden alone doesn't work on iOS.
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
       document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
     }
-    return () => { document.body.style.overflow = '' }
   }, [showSignup, showLogin, showMobileCart])
 
   const handleOrderSubmitted = useCallback(() => {
@@ -642,7 +651,7 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
               <ShoppingCart className="w-5 h-5 text-white" />
               <span className="font-bold text-sm text-white">{cart.getItemCount()} {cart.getItemCount() === 1 ? 'item' : 'items'} in cart</span>
             </div>
-            <span className="bg-white text-brand-primary font-bold text-sm px-4 py-2 rounded-full">
+            <span className="bg-white text-brand-primary font-bold text-sm px-4 py-2.5 rounded-full min-h-[44px] flex items-center">
               Checkout
             </span>
           </button>
@@ -917,8 +926,8 @@ function SignupModal({ onComplete, onExistingMemberDetected, onLoginInstead, vis
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto" style={{ background: 'rgba(42,69,66,0.6)', backdropFilter: 'blur(12px)' }}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md border border-brand-secondary/10 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto" style={{ background: 'rgba(42,69,66,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md border border-brand-secondary/10 max-h-[95dvh] sm:max-h-[90dvh] overflow-y-auto">
         {/* Logo */}
         <div className="pt-8 pb-4 sm:pt-10 sm:pb-5 grad-dark-glow flex flex-col items-center justify-center relative overflow-hidden sticky top-0 z-10">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, #FCFBF7 0%, transparent 70%)' }} />
@@ -1091,8 +1100,8 @@ function LoginModal({ initialEmail = '', onComplete, onSignUpInstead }: { initia
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(42,69,66,0.6)', backdropFilter: 'blur(12px)' }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-brand-secondary/10">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto" style={{ background: 'rgba(42,69,66,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-x-hidden border border-brand-secondary/10 max-h-[95dvh] sm:max-h-[90dvh] overflow-y-auto">
         <div className="pt-10 pb-5 grad-dark-glow flex flex-col items-center justify-center relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, #FCFBF7 0%, transparent 70%)' }} />
           <div className="flex flex-col items-end leading-none relative z-10">

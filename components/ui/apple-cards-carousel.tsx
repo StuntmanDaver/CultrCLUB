@@ -361,6 +361,12 @@ export const Card = ({
   useEffect(() => {
     if (!open) return
 
+    // iOS Safari requires position:fixed to prevent background scroll —
+    // overflow:hidden alone doesn't work on iOS.
+    const scrollY = window.scrollY
+    document.body.style.position = "fixed"
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = "100%"
     document.body.style.overflow = "hidden"
 
     function onKeyDown(event: KeyboardEvent) {
@@ -372,7 +378,11 @@ export const Card = ({
     requestAnimationFrame(() => closeButtonRef.current?.focus())
 
     return () => {
+      document.body.style.position = ""
+      document.body.style.top = ""
+      document.body.style.width = ""
       document.body.style.overflow = ""
+      window.scrollTo(0, scrollY)
       window.removeEventListener("keydown", onKeyDown)
     }
   }, [open, handleClose])
@@ -388,7 +398,7 @@ export const Card = ({
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
           {open && (
-            <div className="fixed inset-0 z-50 h-screen overflow-auto" role="dialog" aria-modal="true" aria-label={card.title}>
+            <div className="fixed inset-0 z-50 h-[100dvh] overflow-auto" role="dialog" aria-modal="true" aria-label={card.title}>
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

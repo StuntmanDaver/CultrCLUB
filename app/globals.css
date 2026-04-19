@@ -625,6 +625,16 @@
   }
 }
 
+/* Prevent iOS Safari auto-zoom when focusing form inputs (requires font-size >= 16px).
+   Applies to all text-entry inputs — HTML default type="text" when unspecified. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
