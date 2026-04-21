@@ -22,9 +22,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  // Stealth: HTML <title> stays generic so browser tabs / scrapers that
-  // defeat preview-bot carveouts don't see the brand.
-  title: '—',
+  title: 'CULTR Club',
   metadataBase: new URL('https://cultrclub.com'),
   // OpenGraph / Twitter: MATCH join.cultrhealth.com so iMessage, Slack,
   // Twitter, Discord, WhatsApp previews render the same thumbnail +
