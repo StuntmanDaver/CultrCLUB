@@ -600,7 +600,7 @@ export const Card = ({
 
         {/* Top: Category + Title */}
         <div className={cn("relative z-10 pb-0 flex justify-between items-start gap-2", compact ? "p-3.5" : "p-5")}>
-          <div>
+          <div className="min-w-0 flex-1">
             <motion.span
               layoutId={layout ? `category-${card.category}-${index}` : undefined}
               className={cn("uppercase tracking-[0.18em] text-white/40 font-semibold", compact ? "text-[9px]" : "text-[10px]")}
@@ -632,7 +632,7 @@ export const Card = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "shrink-0 rounded-full border border-white/20 bg-white/10 text-white font-medium backdrop-blur-md transition-colors hover:bg-white/20 hover:border-white/30",
+                "relative z-30 shrink-0 rounded-full border border-white/20 bg-white/10 text-white font-medium backdrop-blur-md transition-colors hover:bg-white/20 hover:border-white/30",
                 compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"
               )}
             >
