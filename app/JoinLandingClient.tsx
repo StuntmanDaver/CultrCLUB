@@ -503,9 +503,12 @@ function JoinLandingInner({ serverMember }: { serverMember: ServerMember | null 
       {/* Hero Banner — tighter aspect for mobile so carousel is visible above fold */}
       <section className="relative aspect-[16/9] md:aspect-[3/1] overflow-hidden">
         <img
-          src="/images/hero-cultr-join.png"
+          src="/images/hero-cultr-join.webp"
           alt="CULTR — Diverse women in athletic wear"
           className="w-full h-full object-cover object-[center_30%]"
+          fetchPriority="high"
+          loading="eager"
+          decoding="sync"
         />
         {/* Gradient fade into slogan bar */}
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-brand-primary/70 to-transparent pointer-events-none" />
@@ -696,10 +699,30 @@ function TherapyCarouselSection({ section, Icon, stockData, cartOpen, onAddToCar
 
     const handleAdd = () => {
       if (disableAdd) return
+      const isFirstCartAdd =
+        cart.isLoaded &&
+        cart.items.length === 0 &&
+        therapy.id !== 'bacteriostatic-water' &&
+        !localStorage.getItem('cultr_club_has_ordered')
       if (inCart && cartItem) {
         cart.updateQuantity(therapy.id, cartItem.quantity + 1)
       } else {
         cart.addItem({ therapyId: therapy.id, name: therapy.name, price: therapy.price, pricingNote: therapy.pricingNote, note: therapy.note })
+      }
+      // Auto-add BAC water on first product added by a first-time customer
+      if (isFirstCartAdd) {
+        const bacWaterStock = stockData['bacteriostatic-water']
+        const bacWaterStatus = bacWaterStock?.status || 'in_stock'
+        const bacWaterAvailable =
+          bacWaterStatus !== 'out_of_stock' &&
+          bacWaterStatus !== 'restocking_soon' &&
+          (bacWaterStock?.quantity ?? Infinity) >= 1
+        if (bacWaterAvailable) {
+          const bacWater = getAllJoinTherapies().find((t) => t.id === 'bacteriostatic-water')
+          if (bacWater) {
+            cart.addItem({ therapyId: bacWater.id, name: bacWater.name, price: bacWater.price, pricingNote: bacWater.pricingNote, note: bacWater.note })
+          }
+        }
       }
       onAddToCart?.(therapy.id, therapy.name, therapy.price)
     }
