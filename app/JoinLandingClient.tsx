@@ -699,30 +699,10 @@ function TherapyCarouselSection({ section, Icon, stockData, cartOpen, onAddToCar
 
     const handleAdd = () => {
       if (disableAdd) return
-      const isFirstCartAdd =
-        cart.isLoaded &&
-        cart.items.length === 0 &&
-        therapy.id !== 'bacteriostatic-water' &&
-        !localStorage.getItem('cultr_club_has_ordered')
       if (inCart && cartItem) {
         cart.updateQuantity(therapy.id, cartItem.quantity + 1)
       } else {
         cart.addItem({ therapyId: therapy.id, name: therapy.name, price: therapy.price, pricingNote: therapy.pricingNote, note: therapy.note })
-      }
-      // Auto-add BAC water on first product added by a first-time customer
-      if (isFirstCartAdd) {
-        const bacWaterStock = stockData['bacteriostatic-water']
-        const bacWaterStatus = bacWaterStock?.status || 'in_stock'
-        const bacWaterAvailable =
-          bacWaterStatus !== 'out_of_stock' &&
-          bacWaterStatus !== 'restocking_soon' &&
-          (bacWaterStock?.quantity ?? Infinity) >= 1
-        if (bacWaterAvailable) {
-          const bacWater = getAllJoinTherapies().find((t) => t.id === 'bacteriostatic-water')
-          if (bacWater) {
-            cart.addItem({ therapyId: bacWater.id, name: bacWater.name, price: bacWater.price, pricingNote: bacWater.pricingNote, note: bacWater.note })
-          }
-        }
       }
       onAddToCart?.(therapy.id, therapy.name, therapy.price)
     }

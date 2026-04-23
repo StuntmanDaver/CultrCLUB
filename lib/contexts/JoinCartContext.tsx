@@ -1,7 +1,10 @@
 'use client'
 
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
-import { calculateBundleDiscount, normalizeJoinCartItems } from '@/lib/config/join-therapies'
+import { createContext, useContext, useReducer, useEffect, useCallback, useState, type ReactNode } from 'react'
+import { X, Beaker } from 'lucide-react'
+import { calculateBundleDiscount, normalizeJoinCartItems, getAllJoinTherapies } from '@/lib/config/join-therapies'
+
+const BAC_WATER_ID = 'bacteriostatic-water'
 
 // =============================================
 // TYPES
@@ -43,6 +46,8 @@ interface JoinCartContextValue {
   getBundleDiscount: () => number
   getSubtotalAfterBundle: () => number
   hasConsultationItems: () => boolean
+  bacWaterJustAdded: boolean
+  clearBacWaterNotification: () => void
 }
 
 // =============================================
@@ -110,6 +115,7 @@ const JoinCartContext = createContext<JoinCartContextValue | null>(null)
 
 export function JoinCartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [], isLoaded: false })
+  const [bacWaterJustAdded, setBacWaterJustAdded] = useState(false)
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -133,11 +139,39 @@ export function JoinCartProvider({ children }: { children: ReactNode }) {
     }
   }, [state.items, state.isLoaded])
 
+  // Auto-dismiss the BAC water notification after 5 seconds
+  useEffect(() => {
+    if (!bacWaterJustAdded) return
+    const timer = setTimeout(() => setBacWaterJustAdded(false), 5000)
+    return () => clearTimeout(timer)
+  }, [bacWaterJustAdded])
+
   const addItem = useCallback(
     (item: Omit<JoinCartItem, 'quantity'> & { quantity?: number }) => {
       dispatch({ type: 'ADD_ITEM', payload: item })
+
+      // Auto-add bacteriostatic water for any non-BAC product if not already in cart
+      if (
+        item.therapyId !== BAC_WATER_ID &&
+        !state.items.some((i) => i.therapyId === BAC_WATER_ID)
+      ) {
+        const bacWater = getAllJoinTherapies().find((t) => t.id === BAC_WATER_ID)
+        if (bacWater) {
+          dispatch({
+            type: 'ADD_ITEM',
+            payload: {
+              therapyId: bacWater.id,
+              name: bacWater.name,
+              price: bacWater.price,
+              pricingNote: bacWater.pricingNote,
+              note: bacWater.note,
+            },
+          })
+          setBacWaterJustAdded(true)
+        }
+      }
     },
-    []
+    [state.items]
   )
 
   const removeItem = useCallback((therapyId: string) => {
@@ -177,6 +211,8 @@ export function JoinCartProvider({ children }: { children: ReactNode }) {
     return getCartTotal() - getBundleDiscount()
   }, [getCartTotal, getBundleDiscount])
 
+  const clearBacWaterNotification = useCallback(() => setBacWaterJustAdded(false), [])
+
   return (
     <JoinCartContext.Provider
       value={{
@@ -192,9 +228,35 @@ export function JoinCartProvider({ children }: { children: ReactNode }) {
         getBundleDiscount,
         getSubtotalAfterBundle,
         hasConsultationItems,
+        bacWaterJustAdded,
+        clearBacWaterNotification,
       }}
     >
       {children}
+
+      {/* Auto-add notification toast */}
+      {bacWaterJustAdded && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 px-4 py-3 bg-[#D8F3DC] border border-[#B7E4C7] rounded-xl shadow-lg max-w-sm w-[calc(100vw-2rem)]"
+        >
+          <Beaker className="w-5 h-5 text-[#2A4542] shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#2A4542]">Bacteriostatic Water added</p>
+            <p className="text-xs text-[#2A4542]/70 mt-0.5">
+              Required for reconstituting injectable peptides — added automatically.
+            </p>
+          </div>
+          <button
+            onClick={clearBacWaterNotification}
+            aria-label="Dismiss"
+            className="shrink-0 text-[#2A4542]/50 hover:text-[#2A4542] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </JoinCartContext.Provider>
   )
 }
